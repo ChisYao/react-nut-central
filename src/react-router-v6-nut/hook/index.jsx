@@ -1,8 +1,8 @@
-import {useContext} from "react";
+import {useCallback, useContext, useMemo} from "react";
 import {NavigationContext, RouteContext} from "../components/Context.jsx";
 import {normalizePathname} from "../utils/normalizePathname.js";
 import {Outlet} from "../components/index.js";
-import {matchRoutes} from "react-router";
+import {matchPath, matchRoutes} from "react-router";
 
 export function useRoutes(routes) {
     // v3.切换成自主声明路由信息
@@ -49,6 +49,15 @@ export function useRoutes(routes) {
 // 用于提供路由跳转相关方法
 export function useNavigate() {
     const {navigator} = useContext(NavigationContext);
+
+    const navigate = useCallback((to,options = {})=>{
+        if (typeof to ==="number"){
+            navigator.go(to);
+            return;
+        }
+        (!!options.replace ? navigator.replace : navigator.push)(to,options.state);
+    },[navigator])
+
     return navigator.push;
 }
 
@@ -64,8 +73,29 @@ export function useOutlet() {
     return outlet;
 }
 
+// 用于动态路由参数
 export function useParams(){
     const {matches} = useContext(RouteContext);
     const routeMatch = matches[matches.length  -1];
     return routeMatch ?  routeMatch.params : {};
+}
+
+// 用户检测路由是否匹配
+export function useMatch(pattern) {
+    const { pathname } = useLocation();
+    return useMemo(() => matchPath(pattern, pathname), [pathname, pattern]);
+}
+
+// 用于解析路由信息
+export function useResolvedPath(to) {
+    const { pathname } = useLocation();
+
+    return useMemo(
+        () => ({
+            pathname: to,
+            hash: "",
+            search: "",
+        }),
+        [pathname]
+    );
 }
